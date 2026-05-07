@@ -1,29 +1,41 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TCD Origin - 古文字智能体</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; width: 100%; overflow: hidden; font-family: -apple-system, sans-serif; background: #0a0e1a; }
-.header { height: 56px; background: linear-gradient(135deg, #0a0e1a 0%, #1a1f35 100%); border-bottom: 1px solid rgba(0, 212, 255, 0.15); display: flex; align-items: center; padding: 0 24px; }
-.header-logo { display: flex; align-items: center; gap: 12px; }
-.header-logo .icon { width: 32px; height: 32px; background: linear-gradient(135deg, #00d4ff, #7b2ff7); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #fff; font-weight: bold; }
-.header-logo h1 { font-size: 16px; color: #e0e6f0; font-weight: 600; }
-.back-link { margin-left: auto; color: #00d4ff; text-decoration: none; font-size: 13px; }
-.back-link:hover { color: #fff; }
-iframe { width: 100%; height: calc(100% - 56px); border: none; }
+body { min-height: 100vh; background: #0a0e1a; color: #e0e6f0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; }
+.container { max-width: 600px; text-align: center; }
+.icon { width: 80px; height: 80px; background: linear-gradient(135deg, #00d4ff, #7b2ff7); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 40px; color: #fff; font-weight: bold; margin: 0 auto 2rem; }
+h1 { font-size: 1.8rem; margin-bottom: 0.5rem; background: linear-gradient(135deg, #00d4ff, #7b2ff7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.subtitle { color: #6b7a99; margin-bottom: 2rem; font-size: 1rem; }
+.features { text-align: left; margin-bottom: 2.5rem; }
+.feature { display: flex; gap: 12px; margin-bottom: 1rem; align-items: flex-start; }
+.feature-icon { font-size: 1.2rem; flex-shrink: 0; }
+.feature-text { font-size: 0.95rem; line-height: 1.5; color: #b0bdd0; }
+.btn { display: inline-block; padding: 1rem 3rem; background: linear-gradient(135deg, #00d4ff, #7b2ff7); color: #fff; text-decoration: none; border-radius: 50px; font-size: 1.1rem; font-weight: 600; transition: transform 0.2s, box-shadow 0.2s; }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0, 212, 255, 0.3); }
+.note { margin-top: 1.5rem; font-size: 0.8rem; color: #6b7a99; }
+.back { margin-top: 2rem; color: #00d4ff; text-decoration: none; font-size: 0.9rem; }
+.back:hover { color: #fff; }
 </style>
 </head>
 <body>
-<div class="header">
-  <div class="header-logo">
-    <div class="icon">T</div>
-    <h1>TCD Origin 古文字智能体</h1>
+<div class="container">
+  <div class="icon">T</div>
+  <h1>古文字破译智能体</h1>
+  <p class="subtitle">基于拓扑不变量的跨文明古文字AI分析助手</p>
+  <div class="features">
+    <div class="feature"><span class="feature-icon">🔤</span><span class="feature-text">识别甲骨文、楔形文字、埃及圣书体等古代文字</span></div>
+    <div class="feature"><span class="feature-icon">🧬</span><span class="feature-text">拓扑不变量分析：环数、对称阶、Betti数、欧拉特征数</span></div>
+    <div class="feature"><span class="feature-icon">🔗</span><span class="feature-text">跨文明同源性比较，揭示古文字间的深层结构关联</span></div>
+    <div class="feature"><span class="feature-icon">📚</span><span class="feature-text">上传古文字图片，AI自动识别、分析、生成报告</span></div>
   </div>
-  <a class="back-link" href="https://huangao2026.github.io/tcd-origin">← 返回分析平台</a>
+  <a class="btn" href="https://code.coze.cn/web-sdk/7613053284970184739" target="_blank">开始对话 →</a>
+  <p class="note">需要登录扣子账号（免费注册即可）</p>
+  <a class="back" href="https://huangao2026.github.io/tcd-origin">← 返回分析平台</a>
 </div>
-<iframe src="https://code.coze.cn/web-sdk/7613053284970184739" allow="microphone; camera"></iframe>
 </body>
 </html>
