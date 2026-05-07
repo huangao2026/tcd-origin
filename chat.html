@@ -20,6 +20,16 @@ h1 { font-size: 2.2rem; margin-bottom: 0.6rem; background: linear-gradient(135de
 .note { margin-top: 1.5rem; font-size: 0.85rem; color: #6b7a99; }
 .platform-link { display: inline-block; margin-top: 2.5rem; padding: 0.9rem 2.5rem; border: 2px solid #00d4ff; color: #00d4ff; text-decoration: none; border-radius: 50px; font-size: 1.1rem; font-weight: 600; transition: all 0.2s; }
 .platform-link:hover { background: #00d4ff; color: #0a0e1a; }
+.mobile-tip { display: none; margin-top: 1.5rem; padding: 1.2rem 1.5rem; background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3); border-radius: 12px; font-size: 0.95rem; color: #b0bdd0; line-height: 1.7; }
+.mobile-tip strong { color: #00d4ff; }
+@media (max-width: 768px) {
+  .mobile-tip { display: block; }
+  h1 { font-size: 1.6rem; }
+  .subtitle { font-size: 0.95rem; }
+  .feature-text { font-size: 0.95rem; }
+  .btn { padding: 0.9rem 2.5rem; font-size: 1rem; }
+  .platform-link { padding: 0.8rem 2rem; font-size: 1rem; }
+}
 </style>
 </head>
 <body>
@@ -34,7 +44,10 @@ h1 { font-size: 2.2rem; margin-bottom: 0.6rem; background: linear-gradient(135de
     <div class="feature"><span class="feature-icon">📚</span><span class="feature-text">上传古文字图片，AI自动识别、分析、生成报告</span></div>
   </div>
   <a class="btn" href="https://code.coze.cn/web-sdk/7613053284970184739" target="_blank">开始对话 →</a>
-  <p class="note">需要登录扣子账号（免费注册即可）</p>
+  <div class="mobile-tip">
+    📱 <strong>手机用户</strong>：请下载<strong>扣子App</strong>，搜索"古文字破译智能体"即可使用
+  </div>
+  <p class="note">电脑端需登录扣子账号（免费注册即可）</p>
   <a class="platform-link" href="https://huangao2026.github.io/tcd-origin">进入古文字对比分析平台 →</a>
 </div>
 </body>
