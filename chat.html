@@ -84,6 +84,15 @@ body {
   padding: 4px 8px;
   border-radius: 10px;
 }
+.model-badge {
+  font-size: 10px;
+  color: #80cbc4;
+  background: rgba(128, 203, 196, 0.1);
+  border: 1px solid rgba(128, 203, 196, 0.25);
+  padding: 3px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
 
 /* ===== Chat Area ===== */
 .chat-area {
@@ -564,6 +573,7 @@ body {
       <div class="header-subtitle">跨文明古文字拓扑同源性分析</div>
     </div>
     <div class="header-actions">
+      <span class="model-badge" id="modelBadge">DeepSeek</span>
       <span class="msg-counter" id="msgCounter">0 / 30</span>
       <button class="btn-icon" onclick="showSettings()" title="设置">⚙️</button>
       <button class="btn-icon" onclick="clearChat()" title="新对话">🔄</button>
@@ -615,10 +625,10 @@ body {
     <div class="input-wrapper" id="inputWrapper">
       <button class="btn-upload" onclick="document.getElementById('fileInput').click()" title="上传图片">📷</button>
       <input type="file" id="fileInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none" onchange="handleFileSelect(event)">
-      <textarea id="userInput" rows="1" placeholder="输入关于古文字的问题…或拖拽图片到此处" onkeydown="handleKeydown(event)"></textarea>
+      <textarea id="userInput" rows="1" placeholder="输入关于古文字的问题…📷可上传图片分析" onkeydown="handleKeydown(event)"></textarea>
       <button class="btn-send" id="sendBtn" onclick="sendMessage()">发送</button>
     </div>
-    <div class="input-hint">基于 DeepSeek API · 每会话最多30条消息 · 📷可上传图片 · Enter 发送，Shift+Enter 换行</div>
+    <div class="input-hint">文本 · DeepSeek ｜ 图片 · Qwen2.5-VL · 每会话最多30条消息 · Enter 发送，Shift+Enter 换行</div>
   </div>
 </div>
 
@@ -626,10 +636,14 @@ body {
 <div class="overlay" id="settingsOverlay">
   <div class="settings-card">
     <h2>⚙️ API 设置</h2>
-    <div class="desc">使用 DeepSeek API 为智能体提供推理能力。请输入您的 API Key：</div>
-    <label for="apiKeyInput">DeepSeek API Key</label>
+    <div class="desc">双模型架构：纯文本对话使用 DeepSeek，图片分析使用 SiliconFlow 视觉模型</div>
+    <label for="apiKeyInput">DeepSeek API Key（纯文本对话）</label>
     <input type="password" id="apiKeyInput" placeholder="sk-..." autocomplete="off">
     <a class="link" href="https://platform.deepseek.com" target="_blank" rel="noopener">🔗 前往 platform.deepseek.com 获取 API Key</a>
+    <div style="height:18px"></div>
+    <label for="siliconflowKeyInput">视觉模型 API Key（SiliconFlow）</label>
+    <input type="password" id="siliconflowKeyInput" placeholder="sk-..." autocomplete="off" style="margin-bottom: 4px;">
+    <div style="font-size:11px; color:#5a7a9a; margin-bottom:8px;">📷 图片分析需要此Key，去 <a href="https://cloud.siliconflow.cn" target="_blank" rel="noopener" style="color:#4fc3f7;">cloud.siliconflow.cn</a> 注册免费获取</div>
     <div class="settings-actions">
       <button class="btn-secondary" onclick="hideSettings()">取消</button>
       <button class="btn-primary" onclick="saveApiKey()">保存</button>
@@ -648,8 +662,10 @@ body {
 <script>
 // ===== Constants =====
 const MAX_MESSAGES = 30;
-const API_URL = 'https://api.deepseek.com/chat/completions';
-const STORAGE_KEY = 'tcd_deepseek_api_key';
+const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
+const SILICONFLOW_API_URL = 'https://api.siliconflow.cn/v1/chat/completions';
+const DEEPSEEK_STORAGE_KEY = 'deepseek_api_key';
+const SILICONFLOW_STORAGE_KEY = 'siliconflow_api_key';
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_IMAGE_DIMENSION = 1024; // Max width/height for compression
 
@@ -685,30 +701,55 @@ let pendingImage = null; // { base64, name, size }
 document.addEventListener('DOMContentLoaded', () => {
   autoResizeTextarea();
   setupDragAndDrop();
-  if (!getApiKey()) {
+  updateModelBadge();
+  if (!getDeepSeekKey() && !getSiliconFlowKey()) {
     showSettings();
   }
 });
 
 // ===== API Key Management =====
-function getApiKey() {
-  return localStorage.getItem(STORAGE_KEY) || '';
+function getDeepSeekKey() {
+  return localStorage.getItem(DEEPSEEK_STORAGE_KEY) || '';
+}
+
+function getSiliconFlowKey() {
+  return localStorage.getItem(SILICONFLOW_STORAGE_KEY) || '';
+}
+
+function updateModelBadge() {
+  const badge = document.getElementById('modelBadge');
+  const sfKey = getSiliconFlowKey();
+  const dsKey = getDeepSeekKey();
+  if (sfKey && dsKey) {
+    badge.textContent = 'DeepSeek / Qwen2.5-VL';
+  } else if (sfKey) {
+    badge.textContent = 'Qwen2.5-VL';
+  } else {
+    badge.textContent = 'DeepSeek';
+  }
 }
 
 function saveApiKey() {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  if (!key) {
-    showToast('请输入 API Key');
+  const deepseekKey = document.getElementById('apiKeyInput').value.trim();
+  const siliconflowKey = document.getElementById('siliconflowKeyInput').value.trim();
+  if (!deepseekKey && !siliconflowKey) {
+    showToast('请至少输入一个 API Key');
     return;
   }
-  localStorage.setItem(STORAGE_KEY, key);
+  if (deepseekKey) {
+    localStorage.setItem(DEEPSEEK_STORAGE_KEY, deepseekKey);
+  }
+  if (siliconflowKey) {
+    localStorage.setItem(SILICONFLOW_STORAGE_KEY, siliconflowKey);
+  }
   hideSettings();
+  updateModelBadge();
   showToast('API Key 已保存', 'success');
 }
 
 function showSettings() {
-  const key = getApiKey();
-  document.getElementById('apiKeyInput').value = key;
+  document.getElementById('apiKeyInput').value = getDeepSeekKey();
+  document.getElementById('siliconflowKeyInput').value = getSiliconFlowKey();
   document.getElementById('settingsOverlay').classList.add('active');
 }
 
@@ -877,11 +918,21 @@ function sendMessage() {
 
   if (!text && !hasImage) return;
 
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    showSettings();
-    showToast('请先设置 API Key');
-    return;
+  // Check API keys based on message type
+  if (hasImage) {
+    const sfKey = getSiliconFlowKey();
+    if (!sfKey) {
+      showSettings();
+      showToast('图片分析需要视觉模型API Key，请在设置中填写SiliconFlow API Key');
+      return;
+    }
+  } else {
+    const dsKey = getDeepSeekKey();
+    if (!dsKey) {
+      showSettings();
+      showToast('请先设置 DeepSeek API Key');
+      return;
+    }
   }
 
   if (getChatMessages().length >= MAX_MESSAGES) {
@@ -899,7 +950,7 @@ function sendMessage() {
 
   if (hasImage) {
     displayImageBase64 = pendingImage.base64;
-    // Build array content for multimodal
+    // Build array content for multimodal (SiliconFlow VL model)
     const contentParts = [];
     contentParts.push({
       type: 'image_url',
@@ -918,7 +969,8 @@ function sendMessage() {
   messages.push({
     role: 'user',
     content: msgContent,
-    _imageBase64: displayImageBase64 // Store for display only
+    _imageBase64: displayImageBase64, // Store for display only
+    _usedVision: hasImage // Mark which API was used for this message
   });
 
   // Display user message
@@ -930,6 +982,20 @@ function sendMessage() {
   autoResizeTextarea();
   updateCounter();
 
+  // Determine which API to use
+  let apiUrl, apiKey, modelName;
+  if (hasImage) {
+    apiUrl = SILICONFLOW_API_URL;
+    apiKey = getSiliconFlowKey();
+    modelName = 'Qwen/Qwen2.5-VL-7B-Instruct';
+    document.getElementById('modelBadge').textContent = 'Qwen2.5-VL';
+  } else {
+    apiUrl = DEEPSEEK_API_URL;
+    apiKey = getDeepSeekKey();
+    modelName = 'deepseek-chat';
+    document.getElementById('modelBadge').textContent = 'DeepSeek';
+  }
+
   // Start streaming
   isStreaming = true;
   document.getElementById('sendBtn').disabled = true;
@@ -939,23 +1005,33 @@ function sendMessage() {
   contentEl.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
 
   // Build API messages - only send role + content (strip internal fields)
+  // For multimodal messages, keep the array format; for text, keep string
+  // When building history for DeepSeek (text-only), strip image content from previous messages
   const apiMessages = [
     { role: 'system', content: SYSTEM_PROMPT },
-    ...messages.map(m => ({ role: m.role, content: m.content }))
+    ...messages.map(m => {
+      if (!hasImage && m._usedVision && Array.isArray(m.content)) {
+        // When sending to DeepSeek, convert vision messages to text-only
+        const textPart = m.content.find(p => p.type === 'text');
+        return { role: m.role, content: textPart ? textPart.text : '[图片]' };
+      }
+      return { role: m.role, content: m.content };
+    })
   ];
 
   let fullContent = '';
 
-  fetch(API_URL, {
+  fetch(apiUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      model: 'deepseek-chat',
+      model: modelName,
       messages: apiMessages,
-      stream: true
+      stream: true,
+      max_tokens: 2048
     })
   })
   .then(response => {
@@ -976,6 +1052,7 @@ function sendMessage() {
     contentEl.innerHTML = renderMarkdown(fullContent);
     isStreaming = false;
     document.getElementById('sendBtn').disabled = false;
+    updateModelBadge();
     updateCounter();
     scrollToBottom();
   })
@@ -985,11 +1062,14 @@ function sendMessage() {
     messages.pop();
     isStreaming = false;
     document.getElementById('sendBtn').disabled = false;
+    updateModelBadge();
     updateCounter();
-    if (err.message.includes('401') || err.message.includes('api_key') || err.message.includes('API key')) {
+    if (err.message.includes('401') || err.message.includes('api_key') || err.message.includes('API key') || err.message.includes('Authentication')) {
       showToast('API Key 无效，请检查设置');
     } else if (err.message.includes('429')) {
       showToast('请求过于频繁，请稍后重试');
+    } else if (err.message.includes('image_url') || err.message.includes('unknown variant')) {
+      showToast('当前模型不支持图片输入，请检查API配置');
     }
   });
 }
