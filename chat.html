@@ -628,7 +628,7 @@ body {
       <textarea id="userInput" rows="1" placeholder="输入关于古文字的问题…📷可上传图片分析" onkeydown="handleKeydown(event)"></textarea>
       <button class="btn-send" id="sendBtn" onclick="sendMessage()">发送</button>
     </div>
-    <div class="input-hint">文本 · DeepSeek ｜ 图片 · Qwen2.5-VL · 每会话最多30条消息 · Enter 发送，Shift+Enter 换行</div>
+    <div class="input-hint">文本 · DeepSeek ｜ 图片 · Qwen3-VL · 每会话最多30条消息 · Enter 发送，Shift+Enter 换行</div>
   </div>
 </div>
 
@@ -721,9 +721,9 @@ function updateModelBadge() {
   const sfKey = getSiliconFlowKey();
   const dsKey = getDeepSeekKey();
   if (sfKey && dsKey) {
-    badge.textContent = 'DeepSeek / Qwen2.5-VL';
+    badge.textContent = 'DeepSeek / Qwen3-VL';
   } else if (sfKey) {
-    badge.textContent = 'Qwen2.5-VL';
+    badge.textContent = 'Qwen3-VL';
   } else {
     badge.textContent = 'DeepSeek';
   }
@@ -987,8 +987,8 @@ function sendMessage() {
   if (hasImage) {
     apiUrl = SILICONFLOW_API_URL;
     apiKey = getSiliconFlowKey();
-    modelName = 'Qwen/Qwen2.5-VL-7B-Instruct';
-    document.getElementById('modelBadge').textContent = 'Qwen2.5-VL';
+    modelName = 'Qwen/Qwen3-VL-8B-Instruct';
+    document.getElementById('modelBadge').textContent = 'Qwen3-VL';
   } else {
     apiUrl = DEEPSEEK_API_URL;
     apiKey = getDeepSeekKey();
