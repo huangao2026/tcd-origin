@@ -644,20 +644,6 @@ body {
     <label for="siliconflowKeyInput">视觉模型 API Key（SiliconFlow）</label>
     <input type="password" id="siliconflowKeyInput" placeholder="sk-..." autocomplete="off" style="margin-bottom: 4px;">
     <div style="font-size:11px; color:#5a7a9a; margin-bottom:8px;">📷 图片分析需要此Key，去 <a href="https://cloud.siliconflow.cn" target="_blank" rel="noopener" style="color:#4fc3f7;">cloud.siliconflow.cn</a> 注册免费获取</div>
-    
-    <div style="margin: 16px 0; padding: 12px; background: rgba(79, 195, 247, 0.1); border-radius: 8px; border: 1px solid rgba(79, 195, 247, 0.3);" id="cozeModeSection">
-      <div style="display: flex; align-items: center; justify-content: space-between;">
-        <div>
-          <div style="font-weight: 600; color: #4fc3f7;">🔗 扣子服务模式</div>
-          <div style="font-size: 11px; color: #6b8aaa; margin-top: 4px;">开启后无需API Key，直接使用扣子智能体</div>
-        </div>
-        <label class="switch" style="transform: scale(0.9);">
-          <input type="checkbox" id="cozeModeToggle" onchange="toggleCozeMode(this.checked)">
-          <span class="slider"></span>
-        </label>
-      </div>
-    </div>
-    
     <div class="settings-actions">
       <button class="btn-secondary" onclick="hideSettings()">取消</button>
       <button class="btn-primary" onclick="saveApiKey()">保存</button>
@@ -923,55 +909,6 @@ function updateCounter() {
   document.getElementById('msgCounter').textContent = `${count} / ${MAX_MESSAGES}`;
 }
 
-// ===== 扣子服务模式 =====
-function isCozeMode() {
-    return localStorage.getItem(COZE_STORAGE_KEY) === 'true';
-}
-
-function toggleCozeMode(enabled) {
-    localStorage.setItem(COZE_STORAGE_KEY, enabled ? 'true' : 'false');
-    updateCozeUI();
-    showToast(enabled ? '已切换到扣子服务模式（无需API Key）' : '已切换到Direct API模式');
-}
-
-function updateCozeUI() {
-    const checkbox = document.getElementById('cozeModeToggle');
-    if (checkbox) checkbox.checked = isCozeMode();
-    const apiKeySection = document.getElementById('apiKeySection');
-    if (apiKeySection) apiKeySection.style.display = isCozeMode() ? 'none' : 'block';
-}
-
-async function callCozeAPI(message, imageBase64 = null) {
-    const content = imageBase64 
-        ? [{ type: 'image_url', image_url: { url: imageBase64 } }, { type: 'text', text: message }]
-        : [{ type: 'text', text: message }];
-    
-    try {
-        const response = await fetch(COZE_API_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': 'Bearer ' + COZE_API_TOKEN,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                content: { query: { prompt: content } },
-                type: 'query',
-                session_id: 'tcd_' + Date.now()
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error('Coze API错误: ' + response.status);
-        }
-        
-        const data = await response.json();
-        return data.content || data.message || JSON.stringify(data);
-    } catch (error) {
-        console.error('Coze API调用失败:', error);
-        throw error;
-    }
-}
-
 function sendMessage() {
   if (isStreaming) return;
 
@@ -980,44 +917,6 @@ function sendMessage() {
   const hasImage = pendingImage !== null;
 
   if (!text && !hasImage) return;
-
-  // 扣子服务模式 - 无需API Key
-  if (isCozeMode()) {
-    if (getChatMessages().length >= MAX_MESSAGES) {
-      showToast('已达到本会话消息上限（30条），请点击🔄开始新对话');
-      return;
-    }
-    
-    // 添加用户消息
-    if (hasImage) {
-      const imgEl = document.createElement('img');
-      imgEl.src = pendingImage;
-      imgEl.style = 'max-width: 200px; border-radius: 8px; margin-top: 8px;';
-      appendMessage('user', text, imgEl);
-    } else {
-      appendMessage('user', text);
-    }
-    
-    input.value = '';
-    pendingImage = null;
-    document.getElementById('imagePreview').style.display = 'none';
-    
-    // 显示思考动画
-    const thinkingEl = appendThinking();
-    
-    // 调用扣子API
-    callCozeAPI(text, hasImage ? pendingImage.base64 : null)
-      .then(response => {
-        thinkingEl.remove();
-        appendMessage('assistant', response);
-      })
-      .catch(error => {
-        thinkingEl.remove();
-        appendMessage('assistant', '扣子服务调用失败: ' + error.message);
-      });
-    
-    return;
-  }
 
   // Check API keys based on message type
   if (hasImage) {
