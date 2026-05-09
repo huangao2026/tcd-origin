@@ -981,6 +981,44 @@ function sendMessage() {
 
   if (!text && !hasImage) return;
 
+  // 扣子服务模式 - 无需API Key
+  if (isCozeMode()) {
+    if (getChatMessages().length >= MAX_MESSAGES) {
+      showToast('已达到本会话消息上限（30条），请点击🔄开始新对话');
+      return;
+    }
+    
+    // 添加用户消息
+    if (hasImage) {
+      const imgEl = document.createElement('img');
+      imgEl.src = pendingImage;
+      imgEl.style = 'max-width: 200px; border-radius: 8px; margin-top: 8px;';
+      addMessageElement('user', text, imgEl);
+    } else {
+      addMessageElement('user', text);
+    }
+    
+    input.value = '';
+    pendingImage = null;
+    document.getElementById('imagePreview').style.display = 'none';
+    
+    // 显示思考动画
+    const thinkingEl = addThinkingIndicator();
+    
+    // 调用扣子API
+    callCozeAPI(text, hasImage ? pendingImageData : null)
+      .then(response => {
+        thinkingEl.remove();
+        addMessageElement('assistant', response);
+      })
+      .catch(error => {
+        thinkingEl.remove();
+        addMessageElement('assistant', '扣子服务调用失败: ' + error.message);
+      });
+    
+    return;
+  }
+
   // Check API keys based on message type
   if (hasImage) {
     const sfKey = getSiliconFlowKey();
