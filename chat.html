@@ -923,6 +923,55 @@ function updateCounter() {
   document.getElementById('msgCounter').textContent = `${count} / ${MAX_MESSAGES}`;
 }
 
+// ===== 扣子服务模式 =====
+function isCozeMode() {
+    return localStorage.getItem(COZE_STORAGE_KEY) === 'true';
+}
+
+function toggleCozeMode(enabled) {
+    localStorage.setItem(COZE_STORAGE_KEY, enabled ? 'true' : 'false');
+    updateCozeUI();
+    showToast(enabled ? '已切换到扣子服务模式（无需API Key）' : '已切换到Direct API模式');
+}
+
+function updateCozeUI() {
+    const checkbox = document.getElementById('cozeModeToggle');
+    if (checkbox) checkbox.checked = isCozeMode();
+    const apiKeySection = document.getElementById('apiKeySection');
+    if (apiKeySection) apiKeySection.style.display = isCozeMode() ? 'none' : 'block';
+}
+
+async function callCozeAPI(message, imageBase64 = null) {
+    const content = imageBase64 
+        ? [{ type: 'image_url', image_url: { url: imageBase64 } }, { type: 'text', text: message }]
+        : [{ type: 'text', text: message }];
+    
+    try {
+        const response = await fetch(COZE_API_URL, {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + COZE_API_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                content: { query: { prompt: content } },
+                type: 'query',
+                session_id: 'tcd_' + Date.now()
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Coze API错误: ' + response.status);
+        }
+        
+        const data = await response.json();
+        return data.content || data.message || JSON.stringify(data);
+    } catch (error) {
+        console.error('Coze API调用失败:', error);
+        throw error;
+    }
+}
+
 function sendMessage() {
   if (isStreaming) return;
 
