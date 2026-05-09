@@ -993,9 +993,9 @@ function sendMessage() {
       const imgEl = document.createElement('img');
       imgEl.src = pendingImage;
       imgEl.style = 'max-width: 200px; border-radius: 8px; margin-top: 8px;';
-      addMessageElement('user', text, imgEl);
+      appendMessage('user', text, imgEl);
     } else {
-      addMessageElement('user', text);
+      appendMessage('user', text);
     }
     
     input.value = '';
@@ -1003,17 +1003,17 @@ function sendMessage() {
     document.getElementById('imagePreview').style.display = 'none';
     
     // 显示思考动画
-    const thinkingEl = addThinkingIndicator();
+    const thinkingEl = appendThinking();
     
     // 调用扣子API
-    callCozeAPI(text, hasImage ? pendingImage ? pendingImage.base64 : null : null)
+    callCozeAPI(text, hasImage ? pendingImage.base64 : null)
       .then(response => {
         thinkingEl.remove();
-        addMessageElement('assistant', response);
+        appendMessage('assistant', response);
       })
       .catch(error => {
         thinkingEl.remove();
-        addMessageElement('assistant', '扣子服务调用失败: ' + error.message);
+        appendMessage('assistant', '扣子服务调用失败: ' + error.message);
       });
     
     return;
