@@ -1006,7 +1006,7 @@ function sendMessage() {
     const thinkingEl = addThinkingIndicator();
     
     // 调用扣子API
-    callCozeAPI(text, hasImage ? pendingImageData : null)
+    callCozeAPI(text, hasImage ? pendingImage.base64 : null)
       .then(response => {
         thinkingEl.remove();
         addMessageElement('assistant', response);
