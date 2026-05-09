@@ -636,14 +636,25 @@ body {
 <div class="overlay" id="settingsOverlay">
   <div class="settings-card">
     <h2>⚙️ API 设置</h2>
-    <div class="desc">双模型架构：纯文本对话使用 DeepSeek，图片分析使用 SiliconFlow 视觉模型</div>
-    <label for="apiKeyInput">DeepSeek API Key（纯文本对话）</label>
-    <input type="password" id="apiKeyInput" placeholder="sk-..." autocomplete="off">
-    <a class="link" href="https://platform.deepseek.com" target="_blank" rel="noopener">🔗 前往 platform.deepseek.com 获取 API Key</a>
-    <div style="height:18px"></div>
-    <label for="siliconflowKeyInput">视觉模型 API Key（SiliconFlow）</label>
-    <input type="password" id="siliconflowKeyInput" placeholder="sk-..." autocomplete="off" style="margin-bottom: 4px;">
-    <div style="font-size:11px; color:#5a7a9a; margin-bottom:8px;">📷 图片分析需要此Key，去 <a href="https://cloud.siliconflow.cn" target="_blank" rel="noopener" style="color:#4fc3f7;">cloud.siliconflow.cn</a> 注册免费获取</div>
+    <div class="desc" style="margin-bottom:12px;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+        <input type="checkbox" id="useCozeToggle" onchange="toggleCozeMode()" style="width:16px;height:16px;">
+        <span style="color:#4fc3f7;">🤖 使用扣子服务（无需API Key，推荐）</span>
+      </label>
+      <div id="cozeModeHint" style="font-size:11px;color:#5a7a9a;margin-top:6px;display:none;">
+        ✅ 已启用扣子服务，API Key自动配置，无需手动填写
+      </div>
+    </div>
+    <div id="keyInputsSection">
+      <div class="desc" style="margin-bottom:12px;">双模型架构：纯文本对话使用 DeepSeek，图片分析使用 SiliconFlow 视觉模型</div>
+      <label for="apiKeyInput">DeepSeek API Key（纯文本对话）</label>
+      <input type="password" id="apiKeyInput" placeholder="sk-..." autocomplete="off">
+      <a class="link" href="https://platform.deepseek.com" target="_blank" rel="noopener">🔗 前往 platform.deepseek.com 获取 API Key</a>
+      <div style="height:18px"></div>
+      <label for="siliconflowKeyInput">视觉模型 API Key（SiliconFlow）</label>
+      <input type="password" id="siliconflowKeyInput" placeholder="sk-..." autocomplete="off" style="margin-bottom: 4px;">
+      <div style="font-size:11px; color:#5a7a9a; margin-bottom:8px;">📷 图片分析需要此Key，去 <a href="https://cloud.siliconflow.cn" target="_blank" rel="noopener" style="color:#4fc3f7;">cloud.siliconflow.cn</a> 注册免费获取</div>
+    </div>
     <div class="settings-actions">
       <button class="btn-secondary" onclick="hideSettings()">取消</button>
       <button class="btn-primary" onclick="saveApiKey()">保存</button>
@@ -668,29 +679,42 @@ const DEEPSEEK_STORAGE_KEY = 'deepseek_api_key';
 const SILICONFLOW_STORAGE_KEY = 'siliconflow_api_key';
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_IMAGE_DIMENSION = 1024; // Max width/height for compression
+const COZE_STORAGE_KEY = 'coze_mode_enabled';
+const COZE_API_URL = 'https://kzh9kgwxb3.coze.site/stream_run';
+const COZE_API_TOKEN = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjBjMWMxN2I0LTI4ZTktNDQ5Zi1iZTVlLWEwYjk5MTI3OWE5MyJ9.eyJpc3MiOiJodHRwczovL2FwaS5jb3plLmNuIiwiYXVkIjpbIk13b0RVMkY1cWdYcWxWVE5HMmxxeDlJSVljSUlrVEdYIl0sImV4cCI6ODIxMDI2Njg3Njc5OSwiaWF0IjoxNzc4MzQwMDE4LCJzdWIiOiJzcGlmZmU6Ly9hcGkuY296ZS5jbi93b3JrbG9hZF9pZGVudGl0eS9pZDo3NjEzMDcwOTAwMzAwMDg3MzMxIiwic3JjIjoiaW5ib3VuZF9hdXRoX2FjY2Vzc190b2tlbl9pZDo3NjM3OTEyMjIxMTI4ODUxNDkwIn0.idvxs8ybExeln-89uZEunJs5dNWhSlLcs9th_U__K0VsRxOhcEa1dicMqKkGbX0_fOVqXcVBQ5n2Oe0kZrSndIUWYvUZ3Pzzf3s-Aql2Q6RngCh9UpwqSvP_awtnzZaKkYVkpNZoT_9WHu2Un4HKDMhBCjtqiHhNarpze1rvVuyAkmnO41E82A8tlw12XAu8m8PiJd4zptMWCuT0Heq-_uVvThbPk6K1Wnr7fPKxcy2EStKPXyr1ILBVAMJG0KkWgvl7ABVa2RHpjCCQmJwNs9tyt8FLP4eHpo8SngAIErQ_pVzxx8lsgp-XgS-YPiRgenB33QzbLSIH7hbcfia5cw';
+const COZE_BOT_ID = '7613053284970184739';
 
-const SYSTEM_PROMPT = `你是「古文字破译智能体」，一个专注于跨文明古文字同源性分析的专业AI助手。你的知识基于拓扑古文字学（Topological Paleography）这一新兴学科。
+const SYSTEM_PROMPT = `你是一位专业的跨文明古文字分析助手，名字叫 TCD Origin。
 
-## 你的核心能力
-1. **古文字识别与解读**：甲骨文、楔形文字、埃及圣书体三大古文字体系
-2. **拓扑结构分析**：欧拉特征数、Betti数、环数、对称性等拓扑不变量
-3. **跨文明比较**：基于拓扑特征的跨文明符号同源性分析
-4. **《说文解字》引证**：以许慎《说文解字》为重要参考，分析汉字本义与字形演变
+【你的核心使命】
+AI让数学之眼，以前所未有的深度、速度、广度，打开了古文字的全新密码——也架起了各大古代文明之间的渊源对比之桥。这是AI时代社会科学进步的一个显现。
 
-## 理论框架
-- **三层拓扑不变量层级互补体系**：
-  - 全局锚点层（40%权重）：连通分量、像素数、密度、宽高比
-  - 核心不变量层（35%权重）：环数、欧拉数
-  - 局部指纹层（25%权重）：水平对称、垂直对称
-- **三大假说验证结果**：H1具象趋同✅、H2抽象分异✅、H3环数最强❌（对称性>环数）
-- **环数重定位**：环数更适合作为"文化传播指示器"而非最强的区分特征
+【三大古文字体系】
+1. 甲骨文：中国商代（约公元前1600-1046年），刻在龟甲兽骨上的象形文字
+2. 楔形文字：两河流域苏美尔人（约公元前3400年发明），芦苇笔压印在湿泥板上的文字
+3. 埃及圣书体：古埃及（约公元前3200年），神庙和墓碑上的神圣字体
 
-## 交互风格
-- 学术但亲和，既专业又易懂
-- 回答时引用具体数据和分析结果
-- 适当使用类比帮助理解复杂概念
-- 对不确定的内容明确标注
-- 当用户上传字符图片时，仔细观察图片中的文字符号，从形态、笔画结构、拓扑特征等角度进行分析`;
+【核心能力】
+1. 接收古文字图片，自动判断属于哪种古文字体系
+2. 提取拓扑结构特征（对称性、环数、连通分量、宽高比、欧拉数等）
+3. 在三大古文字数据库中检索拓扑结构相近的候选符号
+4. 综合分析并呈现跨文明同源性分析
+
+【技术说明】
+使用拓扑不变量（symmetry/aspect ratio/Euler characteristic/connected components/hole count）构建8维特征向量，不依赖语义和发音，客观度量结构同源性。拓扑相似度≥0.7的候选视为"同源候选"。
+
+【HUST-OBC未破译甲骨文】
+- 总字数逾4300-4400字，达成共识的仅约1300-1490字（占1/3）
+- 近3000字未能释读，语义断了，传统方法无能为力
+- TCD Origin的价值：绕开语义，直接从结构切入找"结构孪生"
+
+【沟通风格】
+- 对大众用户：说"数学分析"而不是"拓扑不变量"，亲切有温度
+- 遇到无法识别时诚实说明并提供可能的探索方向
+
+【禁止事项】
+- 不使用过于学术的术语，保持通俗易懂
+- 不否定用户的推测，鼓励开放探索`;
 
 // ===== State =====
 let messages = []; // { role, content, imageBase64? }
@@ -702,8 +726,15 @@ document.addEventListener('DOMContentLoaded', () => {
   autoResizeTextarea();
   setupDragAndDrop();
   updateModelBadge();
-  if (!getDeepSeekKey() && !getSiliconFlowKey()) {
+  // 如果启用了扣子模式，不再提示填Key
+  if (!isCozeMode() && !getDeepSeekKey() && !getSiliconFlowKey()) {
     showSettings();
+  }
+  // 恢复扣子模式开关状态
+  const toggle = document.getElementById('useCozeToggle');
+  if (toggle) {
+    toggle.checked = isCozeMode();
+    updateCozeUI();
   }
 });
 
@@ -714,6 +745,29 @@ function getDeepSeekKey() {
 
 function getSiliconFlowKey() {
   return localStorage.getItem(SILICONFLOW_STORAGE_KEY) || '';
+}
+
+// ===== Coze Mode =====
+function isCozeMode() {
+  return localStorage.getItem(COZE_STORAGE_KEY) === 'true';
+}
+
+function toggleCozeMode() {
+  const toggle = document.getElementById('useCozeToggle');
+  const enabled = toggle.checked;
+  localStorage.setItem(COZE_STORAGE_KEY, enabled);
+  updateCozeUI();
+}
+
+function updateCozeUI() {
+  const enabled = isCozeMode();
+  const hint = document.getElementById('cozeModeHint');
+  const keySection = document.getElementById('keyInputsSection');
+  if (hint) hint.style.display = enabled ? 'block' : 'none';
+  if (keySection) keySection.style.opacity = enabled ? '0.4' : '1';
+  if (enabled) {
+    document.getElementById('modelBadge').textContent = '扣子服务';
+  }
 }
 
 function updateModelBadge() {
@@ -985,7 +1039,14 @@ function sendMessage() {
 
   // Determine which API to use
   let apiUrl, apiKey, modelName;
-  if (hasImage) {
+  let useCoze = isCozeMode();
+
+  if (useCoze) {
+    apiUrl = COZE_API_URL;
+    apiKey = COZE_API_TOKEN;
+    modelName = 'coze';
+    document.getElementById('modelBadge').textContent = '扣子服务';
+  } else if (hasImage) {
     apiUrl = SILICONFLOW_API_URL;
     apiKey = getSiliconFlowKey();
     modelName = 'Qwen/Qwen3-VL-8B-Instruct';
@@ -1015,13 +1076,10 @@ function sendMessage() {
   contentEl.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
 
   // Build API messages - only send role + content (strip internal fields)
-  // For multimodal messages, keep the array format; for text, keep string
-  // When building history for DeepSeek (text-only), strip image content from previous messages
   const apiMessages = [
     { role: 'system', content: SYSTEM_PROMPT },
     ...messages.map(m => {
       if (!hasImage && m._usedVision && Array.isArray(m.content)) {
-        // When sending to DeepSeek, convert vision messages to text-only
         const textPart = m.content.find(p => p.type === 'text');
         return { role: m.role, content: textPart ? textPart.text : '[图片]' };
       }
@@ -1031,23 +1089,72 @@ function sendMessage() {
 
   let fullContent = '';
 
-  fetch(apiUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: modelName,
-      messages: apiMessages,
-      stream: true,
-      max_tokens: 2048
+  if (useCoze) {
+    // ===== Coze API =====
+    // Coze API format: POST /stream_run with { bot_id, stream, content }
+    let cozeContent;
+    if (hasImage && displayImageBase64) {
+      // Send image as base64 with text prompt
+      cozeContent = `【图片分析请求】\n用户上传了一张图片，请分析图片中的古文字符号。\n图片: data:image/jpeg;base64,${displayImageBase64.split(',')[1] || displayImageBase64.split(',')[0]}`;
+    } else {
+      cozeContent = text;
+    }
+
+    fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        bot_id: COZE_BOT_ID,
+        stream: true,
+        content: cozeContent
+      })
     })
-  })
-  .then(response => {
-    if (!response.ok) {
-      return response.json().then(err => {
-        throw new Error(err.error?.message || `HTTP ${response.status}`);
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`请求失败: HTTP ${response.status}`);
+      }
+      return streamResponse(response, contentEl, (chunk) => {
+        fullContent += chunk;
+      });
+    })
+    .then(() => {
+      messages.push({ role: 'assistant', content: fullContent });
+      contentEl.innerHTML = renderMarkdown(fullContent);
+      isStreaming = false;
+      document.getElementById('sendBtn').disabled = false;
+      updateCounter();
+      scrollToBottom();
+    })
+    .catch(err => {
+      contentEl.innerHTML = `<span style="color:#ef9a9a;">❌ ${escapeHtml(err.message)}</span>`;
+      messages.pop();
+      isStreaming = false;
+      document.getElementById('sendBtn').disabled = false;
+      updateCounter();
+      showToast('扣子服务连接失败，请检查网络或稍后重试');
+    });
+  } else {
+    // ===== Direct API (DeepSeek/SiliconFlow) =====
+    fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: modelName,
+        messages: apiMessages,
+        stream: true,
+        max_tokens: 2048
+      })
+    })
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(err => {
+          throw new Error(err.error?.message || `HTTP ${response.status}`);
       }).catch(e => {
         if (e.message && !e.message.startsWith('HTTP')) throw e;
         throw new Error(`请求失败: HTTP ${response.status}`);
