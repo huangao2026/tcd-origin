@@ -644,6 +644,20 @@ body {
     <label for="siliconflowKeyInput">视觉模型 API Key（SiliconFlow）</label>
     <input type="password" id="siliconflowKeyInput" placeholder="sk-..." autocomplete="off" style="margin-bottom: 4px;">
     <div style="font-size:11px; color:#5a7a9a; margin-bottom:8px;">📷 图片分析需要此Key，去 <a href="https://cloud.siliconflow.cn" target="_blank" rel="noopener" style="color:#4fc3f7;">cloud.siliconflow.cn</a> 注册免费获取</div>
+    
+    <div style="margin: 16px 0; padding: 12px; background: rgba(79, 195, 247, 0.1); border-radius: 8px; border: 1px solid rgba(79, 195, 247, 0.3);" id="cozeModeSection">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <div style="font-weight: 600; color: #4fc3f7;">🔗 扣子服务模式</div>
+          <div style="font-size: 11px; color: #6b8aaa; margin-top: 4px;">开启后无需API Key，直接使用扣子智能体</div>
+        </div>
+        <label class="switch" style="transform: scale(0.9);">
+          <input type="checkbox" id="cozeModeToggle" onchange="toggleCozeMode(this.checked)">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+    
     <div class="settings-actions">
       <button class="btn-secondary" onclick="hideSettings()">取消</button>
       <button class="btn-primary" onclick="saveApiKey()">保存</button>
