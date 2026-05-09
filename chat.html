@@ -928,9 +928,10 @@ function sendMessage() {
     }
   } else {
     const dsKey = getDeepSeekKey();
-    if (!dsKey) {
+    const sfKey = getSiliconFlowKey();
+    if (!dsKey && !sfKey) {
       showSettings();
-      showToast('请先设置 DeepSeek API Key');
+      showToast('请至少设置一个 API Key');
       return;
     }
   }
@@ -990,10 +991,19 @@ function sendMessage() {
     modelName = 'Qwen/Qwen3-VL-8B-Instruct';
     document.getElementById('modelBadge').textContent = 'Qwen3-VL';
   } else {
-    apiUrl = DEEPSEEK_API_URL;
-    apiKey = getDeepSeekKey();
-    modelName = 'deepseek-chat';
-    document.getElementById('modelBadge').textContent = 'DeepSeek';
+    const dsKey = getDeepSeekKey();
+    if (dsKey) {
+      apiUrl = DEEPSEEK_API_URL;
+      apiKey = dsKey;
+      modelName = 'deepseek-chat';
+      document.getElementById('modelBadge').textContent = 'DeepSeek';
+    } else {
+      // Fallback: use SiliconFlow's DeepSeek model when no DeepSeek key
+      apiUrl = SILICONFLOW_API_URL;
+      apiKey = getSiliconFlowKey();
+      modelName = 'deepseek-ai/DeepSeek-V4-Flash';
+      document.getElementById('modelBadge').textContent = 'DeepSeek(SF)';
+    }
   }
 
   // Start streaming
