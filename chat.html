@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>古文字破译智能体 · TCD Origin</title>
+<style>
+/* ===== Reset & Base ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: #0a0e17;
+  color: #e0e6ed;
+  overflow: hidden;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2a3a5c; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #3a5a8c; }
+
+/* ===== Layout ===== */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 860px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* ===== Header ===== */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #0d1b2a 0%, #1b2838 100%);
+  border-bottom: 1px solid #1e3a5f;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+.header-title {
+  font-size: 16px;
+  font-weight: 600;
+  background: linear-gradient(90deg, #4fc3f7, #00e5ff, #4fc3f7);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 3s linear infinite;
+}
+@keyframes shimmer {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+.header-subtitle {
+  font-size: 11px;
+  color: #5a7a9a;
+  margin-top: 2px;
+}
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.btn-icon {
+  background: rgba(79, 195, 247, 0.1);
+  border: 1px solid rgba(79, 195, 247, 0.3);
+  color: #4fc3f7;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+.btn-icon:hover { background: rgba(79, 195, 247, 0.2); border-color: #4fc3f7; }
+.msg-counter {
+  font-size: 11px;
+  color: #5a8aaa;
+  background: rgba(79, 195, 247, 0.08);
+  padding: 4px 8px;
+  border-radius: 10px;
+}
+.model-badge {
+  font-size: 10px;
+  color: #80cbc4;
+  background: rgba(128, 203, 196, 0.1);
+  border: 1px solid rgba(128, 203, 196, 0.25);
+  padding: 3px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+/* ===== Chat Area ===== */
+.chat-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ===== Welcome Screen ===== */
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  text-align: center;
+  padding: 40px 20px;
+}
+.welcome-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 0 20px rgba(79, 195, 247, 0.4));
+}
+.welcome h2 {
+  font-size: 22px;
+  color: #4fc3f7;
+  margin-bottom: 8px;
+}
+.welcome p {
+  font-size: 14px;
+  color: #7a9ab8;
+  max-width: 400px;
+  line-height: 1.6;
+}
+.welcome-features {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 24px;
+  max-width: 500px;
+  width: 100%;
+}
+.feature-card {
+  background: rgba(79, 195, 247, 0.05);
+  border: 1px solid rgba(79, 195, 247, 0.15);
+  border-radius: 10px;
+  padding: 14px 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.feature-card:hover {
+  background: rgba(79, 195, 247, 0.12);
+  border-color: rgba(79, 195, 247, 0.4);
+  transform: translateY(-2px);
+}
+.feature-card .fc-icon { font-size: 20px; margin-bottom: 6px; }
+.feature-card .fc-title { font-size: 13px; color: #4fc3f7; font-weight: 600; margin-bottom: 4px; }
+.feature-card .fc-desc { font-size: 11px; color: #6a8aa8; line-height: 1.5; }
+
+/* ===== Messages ===== */
+.message {
+  display: flex;
+  gap: 10px;
+  max-width: 100%;
+  animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.message.user { flex-direction: row-reverse; }
+.msg-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.message.user .msg-avatar { background: linear-gradient(135deg, #1565c0, #1e88e5); }
+.message.assistant .msg-avatar { background: linear-gradient(135deg, #00695c, #00897b); }
+.msg-content {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.7;
+  max-width: calc(100% - 48px);
+  word-break: break-word;
+}
+.message.user .msg-content {
+  background: linear-gradient(135deg, #1565c0, #1976d2);
+  color: #e3f2fd;
+  border-bottom-right-radius: 4px;
+}
+.message.assistant .msg-content {
+  background: #1a2332;
+  border: 1px solid #1e3a5f;
+  border-bottom-left-radius: 4px;
+  color: #c8d8e8;
+}
+
+/* ===== Image in Messages ===== */
+.msg-image {
+  max-width: 200px;
+  border-radius: 8px;
+  display: block;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.msg-image:hover { opacity: 0.85; }
+
+/* ===== Markdown Styles in Messages ===== */
+.msg-content p { margin: 0 0 8px 0; }
+.msg-content p:last-child { margin-bottom: 0; }
+.msg-content strong { color: #4fc3f7; font-weight: 600; }
+.msg-content em { color: #80cbc4; }
+.msg-content code {
+  background: rgba(79, 195, 247, 0.12);
+  color: #4fc3f7;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: 'Fira Code', 'Consolas', monospace;
+}
+.msg-content pre {
+  background: #0d1520;
+  border: 1px solid #1e3a5f;
+  border-radius: 8px;
+  padding: 12px;
+  overflow-x: auto;
+  margin: 8px 0;
+  position: relative;
+}
+.msg-content pre code {
+  background: none;
+  padding: 0;
+  color: #a8c8e8;
+  font-size: 13px;
+}
+.msg-content ul, .msg-content ol { margin: 6px 0; padding-left: 20px; }
+.msg-content li { margin: 3px 0; }
+.msg-content blockquote {
+  border-left: 3px solid #4fc3f7;
+  padding-left: 12px;
+  margin: 8px 0;
+  color: #8aa8c8;
+}
+.msg-content h1, .msg-content h2, .msg-content h3 {
+  color: #4fc3f7;
+  margin: 12px 0 6px;
+}
+.msg-content h1 { font-size: 18px; }
+.msg-content h2 { font-size: 16px; }
+.msg-content h3 { font-size: 15px; }
+.msg-content a { color: #4fc3f7; text-decoration: underline; }
+.msg-content table { border-collapse: collapse; margin: 8px 0; width: 100%; font-size: 13px; }
+.msg-content th, .msg-content td { border: 1px solid #1e3a5f; padding: 6px 10px; }
+.msg-content th { background: rgba(79, 195, 247, 0.1); color: #4fc3f7; }
+
+/* ===== Typing Indicator ===== */
+.typing-indicator {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px 0;
+}
+.typing-indicator span {
+  width: 6px;
+  height: 6px;
+  background: #4fc3f7;
+  border-radius: 50%;
+  animation: typing 1.4s infinite ease-in-out;
+}
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* ===== Input Area ===== */
+.input-area {
+  padding: 12px 16px 16px;
+  background: linear-gradient(180deg, transparent 0%, rgba(10, 14, 23, 0.95) 20%);
+  flex-shrink: 0;
+}
+
+/* ===== Image Preview ===== */
+.image-preview-area {
+  display: none;
+  padding: 0 0 8px 0;
+}
+.image-preview-area.active {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(17, 25, 39, 0.8);
+  border: 1px solid #1e3a5f;
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+}
+.preview-thumb {
+  height: 60px;
+  max-width: 120px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid rgba(79, 195, 247, 0.3);
+}
+.preview-info {
+  flex: 1;
+  font-size: 12px;
+  color: #6a8aa8;
+  overflow: hidden;
+}
+.preview-info .preview-name {
+  color: #8aa8c8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+.preview-remove {
+  background: rgba(198, 40, 40, 0.2);
+  border: 1px solid rgba(198, 40, 40, 0.4);
+  color: #ef9a9a;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.preview-remove:hover {
+  background: rgba(198, 40, 40, 0.4);
+  border-color: #c62828;
+}
+
+.input-wrapper {
+  display: flex;
+  gap: 8px;
+  background: #111927;
+  border: 1px solid #1e3a5f;
+  border-radius: 14px;
+  padding: 6px 6px 6px 6px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input-wrapper:focus-within { border-color: #4fc3f7; box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.15); }
+.input-wrapper.drag-over {
+  border-color: #4fc3f7;
+  box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.25);
+  background: rgba(79, 195, 247, 0.05);
+}
+.btn-upload {
+  background: rgba(79, 195, 247, 0.1);
+  border: none;
+  color: #4fc3f7;
+  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+.btn-upload:hover { background: rgba(79, 195, 247, 0.2); }
+.input-wrapper textarea {
+  flex: 1;
+  background: none;
+  border: none;
+  color: #e0e6ed;
+  font-size: 14px;
+  resize: none;
+  outline: none;
+  padding: 8px 0;
+  max-height: 120px;
+  line-height: 1.5;
+  font-family: inherit;
+}
+.input-wrapper textarea::placeholder { color: #4a6a8a; }
+.btn-send {
+  background: linear-gradient(135deg, #1565c0, #0288d1);
+  border: none;
+  color: white;
+  border-radius: 10px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  white-space: nowrap;
+  align-self: flex-end;
+}
+.btn-send:hover { background: linear-gradient(135deg, #1976d2, #039be5); }
+.btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
+.input-hint {
+  text-align: center;
+  font-size: 11px;
+  color: #3a5a7a;
+  margin-top: 8px;
+}
+
+/* ===== Settings Overlay ===== */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 15, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+.overlay.active { display: flex; }
+.settings-card {
+  background: #111927;
+  border: 1px solid #1e3a5f;
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 420px;
+  width: 90%;
+  animation: scaleIn 0.25s ease;
+}
+@keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.settings-card h2 {
+  font-size: 18px;
+  color: #4fc3f7;
+  margin-bottom: 6px;
+}
+.settings-card .desc {
+  font-size: 13px;
+  color: #6a8aa8;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+.settings-card label {
+  display: block;
+  font-size: 13px;
+  color: #8aa8c8;
+  margin-bottom: 6px;
+}
+.settings-card input[type="password"] {
+  width: 100%;
+  background: #0a0e17;
+  border: 1px solid #1e3a5f;
+  color: #e0e6ed;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: 'Fira Code', 'Consolas', monospace;
+}
+.settings-card input[type="password"]:focus { border-color: #4fc3f7; }
+.settings-card .link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #4fc3f7;
+  text-decoration: none;
+}
+.settings-card .link:hover { text-decoration: underline; }
+.settings-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #1565c0, #0288d1);
+  border: none;
+  color: white;
+  border-radius: 10px;
+  padding: 8px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.btn-primary:hover { background: linear-gradient(135deg, #1976d2, #039be5); }
+.btn-secondary {
+  background: transparent;
+  border: 1px solid #2a3a5c;
+  color: #8aa8c8;
+  border-radius: 10px;
+  padding: 8px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.btn-secondary:hover { border-color: #4a6a8c; color: #c8d8e8; }
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-80px);
+  background: #1a2332;
+  border: 1px solid #c62828;
+  color: #ef9a9a;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  z-index: 200;
+  transition: transform 0.3s ease;
+  max-width: 90%;
+  text-align: center;
+}
+.toast.success { border-color: #2e7d32; color: #a5d6a7; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ===== Rate Limit Warning ===== */
+.rate-limit-msg {
+  text-align: center;
+  color: #ffab40;
+  font-size: 13px;
+  padding: 12px;
+  background: rgba(255, 171, 64, 0.08);
+  border: 1px solid rgba(255, 171, 64, 0.2);
+  border-radius: 10px;
+}
+
+/* ===== Image Lightbox ===== */
+.lightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 15, 0.92);
+  z-index: 150;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+  animation: fadeIn 0.2s ease;
+}
+.lightbox.active { display: flex; }
+.lightbox img {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 8px;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+}
+
+/* ===== Mobile ===== */
+@media (max-width: 600px) {
+  .header { padding: 10px 14px; }
+  .header-title { font-size: 14px; }
+  .header-subtitle { display: none; }
+  .chat-area { padding: 14px 10px; gap: 12px; }
+  .msg-content { font-size: 13.5px; padding: 9px 12px; }
+  .input-area { padding: 8px 10px 12px; }
+  .welcome-features { grid-template-columns: 1fr; }
+  .feature-card { padding: 10px; }
+  .settings-card { padding: 20px; }
+  .preview-info .preview-name { max-width: 120px; }
+  .msg-image { max-width: 150px; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <div class="header-title">古文字破译智能体 · TCD Origin</div>
+      <div class="header-subtitle">跨文明古文字拓扑同源性分析</div>
+    </div>
+    <div class="header-actions">
+      <span class="model-badge" id="modelBadge">DeepSeek</span>
+      <span class="msg-counter" id="msgCounter">0 / 30</span>
+      <button class="btn-icon" onclick="showSettings()" title="设置">⚙️</button>
+      <button class="btn-icon" onclick="clearChat()" title="新对话">🔄</button>
+    </div>
+  </div>
+
+  <!-- Chat Area -->
+  <div class="chat-area" id="chatArea">
+    <div class="welcome" id="welcome">
+      <div class="welcome-icon">𒀭</div>
+      <h2>欢迎来到古文字破译智能体</h2>
+      <p>基于拓扑古文字学的AI助手，帮助您探索甲骨文、楔形文字、埃及圣书体之间的深层关联</p>
+      <div class="welcome-features">
+        <div class="feature-card" onclick="quickAsk('请帮我识别和分析一个古文字符号，它属于哪个文字体系？有什么含义？')">
+          <div class="fc-icon">🔍</div>
+          <div class="fc-title">古文字识别</div>
+          <div class="fc-desc">甲骨文、楔形文字、圣书体三大体系</div>
+        </div>
+        <div class="feature-card" onclick="quickAsk('请解释拓扑结构分析在古文字研究中的应用，包括欧拉特征数、Betti数、环数与对称性的作用')">
+          <div class="fc-icon">🧬</div>
+          <div class="fc-title">拓扑结构分析</div>
+          <div class="fc-desc">欧拉特征数、Betti数、环数与对称性</div>
+        </div>
+        <div class="feature-card" onclick="quickAsk('请比较甲骨文、楔形文字和埃及圣书体之间的拓扑结构同源性，有哪些跨文明的共同特征？')">
+          <div class="fc-icon">🌐</div>
+          <div class="fc-title">跨文明比较</div>
+          <div class="fc-desc">基于拓扑特征的符号同源性分析</div>
+        </div>
+        <div class="feature-card" onclick="quickAsk('请用《说文解字》的方法分析一个汉字的本义和字形演变过程')">
+          <div class="fc-icon">📖</div>
+          <div class="fc-title">说文解字引证</div>
+          <div class="fc-desc">许慎《说文解字》汉字本义与字形演变</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input Area -->
+  <div class="input-area">
+    <!-- Image Preview -->
+    <div class="image-preview-area" id="imagePreviewArea">
+      <img class="preview-thumb" id="previewThumb" src="" alt="预览">
+      <div class="preview-info">
+        <div class="preview-name" id="previewName"></div>
+        <div id="previewSize"></div>
+      </div>
+      <button class="preview-remove" onclick="removePendingImage()" title="移除图片">✕</button>
+    </div>
+    <div class="input-wrapper" id="inputWrapper">
+      <button class="btn-upload" onclick="document.getElementById('fileInput').click()" title="上传图片">📷</button>
+      <input type="file" id="fileInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none" onchange="handleFileSelect(event)">
+      <textarea id="userInput" rows="1" placeholder="输入关于古文字的问题…📷可上传图片分析" onkeydown="handleKeydown(event)"></textarea>
+      <button class="btn-send" id="sendBtn" onclick="sendMessage()">发送</button>
+    </div>
+    <div class="input-hint">文本 · DeepSeek ｜ 图片 · Qwen3-VL · 每会话最多30条消息 · Enter 发送，Shift+Enter 换行</div>
+  </div>
+</div>
+
+<!-- Settings Overlay -->
+<div class="overlay" id="settingsOverlay">
+  <div class="settings-card">
+    <h2>⚙️ API 设置</h2>
+    <div class="desc">双模型架构：纯文本对话使用 DeepSeek，图片分析使用 SiliconFlow 视觉模型</div>
+    <label for="apiKeyInput">DeepSeek API Key（纯文本对话）</label>
+    <input type="password" id="apiKeyInput" placeholder="sk-..." autocomplete="off">
+    <a class="link" href="https://platform.deepseek.com" target="_blank" rel="noopener">🔗 前往 platform.deepseek.com 获取 API Key</a>
+    <div style="height:18px"></div>
+    <label for="siliconflowKeyInput">视觉模型 API Key（SiliconFlow）</label>
+    <input type="password" id="siliconflowKeyInput" placeholder="sk-..." autocomplete="off" style="margin-bottom: 4px;">
+    <div style="font-size:11px; color:#5a7a9a; margin-bottom:8px;">📷 图片分析需要此Key，去 <a href="https://cloud.siliconflow.cn" target="_blank" rel="noopener" style="color:#4fc3f7;">cloud.siliconflow.cn</a> 注册免费获取</div>
+    <div class="settings-actions">
+      <button class="btn-secondary" onclick="hideSettings()">取消</button>
+      <button class="btn-primary" onclick="saveApiKey()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== Constants =====
+const MAX_MESSAGES = 30;
+const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
+const SILICONFLOW_API_URL = 'https://api.siliconflow.cn/v1/chat/completions';
+const DEEPSEEK_STORAGE_KEY = 'deepseek_api_key';
+const SILICONFLOW_STORAGE_KEY = 'siliconflow_api_key';
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_IMAGE_DIMENSION = 1024; // Max width/height for compression
+
+const SYSTEM_PROMPT = `你是「古文字破译智能体」，一个专注于跨文明古文字同源性分析的专业AI助手。你的知识基于拓扑古文字学（Topological Paleography）这一新兴学科。
+
+## 你的核心能力
+1. **古文字识别与解读**：甲骨文、楔形文字、埃及圣书体三大古文字体系
+2. **拓扑结构分析**：欧拉特征数、Betti数、环数、对称性等拓扑不变量
+3. **跨文明比较**：基于拓扑特征的跨文明符号同源性分析
+4. **《说文解字》引证**：以许慎《说文解字》为重要参考，分析汉字本义与字形演变
+
+## 理论框架
+- **三层拓扑不变量层级互补体系**：
+  - 全局锚点层（40%权重）：连通分量、像素数、密度、宽高比
+  - 核心不变量层（35%权重）：环数、欧拉数
+  - 局部指纹层（25%权重）：水平对称、垂直对称
+- **三大假说验证结果**：H1具象趋同✅、H2抽象分异✅、H3环数最强❌（对称性>环数）
+- **环数重定位**：环数更适合作为"文化传播指示器"而非最强的区分特征
+
+## 交互风格
+- 学术但亲和，既专业又易懂
+- 回答时引用具体数据和分析结果
+- 适当使用类比帮助理解复杂概念
+- 对不确定的内容明确标注
+- 当用户上传字符图片时，仔细观察图片中的文字符号，从形态、笔画结构、拓扑特征等角度进行分析`;
+
+// ===== State =====
+let messages = []; // { role, content, imageBase64? }
+let isStreaming = false;
+let pendingImage = null; // { base64, name, size }
+
+// ===== Init =====
+document.addEventListener('DOMContentLoaded', () => {
+  autoResizeTextarea();
+  setupDragAndDrop();
+  updateModelBadge();
+  if (!getDeepSeekKey() && !getSiliconFlowKey()) {
+    showSettings();
+  }
+});
+
+// ===== API Key Management =====
+function getDeepSeekKey() {
+  return localStorage.getItem(DEEPSEEK_STORAGE_KEY) || '';
+}
+
+function getSiliconFlowKey() {
+  return localStorage.getItem(SILICONFLOW_STORAGE_KEY) || '';
+}
+
+function updateModelBadge() {
+  const badge = document.getElementById('modelBadge');
+  const sfKey = getSiliconFlowKey();
+  const dsKey = getDeepSeekKey();
+  if (sfKey && dsKey) {
+    badge.textContent = 'DeepSeek / Qwen3-VL';
+  } else if (sfKey) {
+    badge.textContent = 'Qwen3-VL';
+  } else {
+    badge.textContent = 'DeepSeek';
+  }
+}
+
+function saveApiKey() {
+  const deepseekKey = document.getElementById('apiKeyInput').value.trim();
+  const siliconflowKey = document.getElementById('siliconflowKeyInput').value.trim();
+  if (!deepseekKey && !siliconflowKey) {
+    showToast('请至少输入一个 API Key');
+    return;
+  }
+  if (deepseekKey) {
+    localStorage.setItem(DEEPSEEK_STORAGE_KEY, deepseekKey);
+  }
+  if (siliconflowKey) {
+    localStorage.setItem(SILICONFLOW_STORAGE_KEY, siliconflowKey);
+  }
+  hideSettings();
+  updateModelBadge();
+  showToast('API Key 已保存', 'success');
+}
+
+function showSettings() {
+  document.getElementById('apiKeyInput').value = getDeepSeekKey();
+  document.getElementById('siliconflowKeyInput').value = getSiliconFlowKey();
+  document.getElementById('settingsOverlay').classList.add('active');
+}
+
+function hideSettings() {
+  document.getElementById('settingsOverlay').classList.remove('active');
+}
+
+// ===== Image Handling =====
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  processImageFile(file);
+  // Reset input so the same file can be re-selected
+  event.target.value = '';
+}
+
+function processImageFile(file) {
+  // Validate type
+  const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  if (!validTypes.includes(file.type)) {
+    showToast('不支持的图片格式，请上传 JPG/PNG/GIF/WebP');
+    return;
+  }
+
+  // Validate size
+  if (file.size > MAX_IMAGE_SIZE) {
+    showToast('图片大小超过10MB限制，请压缩后上传');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      // Compress image
+      const compressed = compressImage(img);
+      pendingImage = {
+        base64: compressed,
+        name: file.name,
+        size: file.size
+      };
+      showImagePreview(compressed, file.name, file.size);
+    };
+    img.onerror = function() {
+      showToast('图片加载失败，请尝试其他图片');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function compressImage(img) {
+  const canvas = document.createElement('canvas');
+  let width = img.naturalWidth;
+  let height = img.naturalHeight;
+
+  // Scale down if exceeds max dimension
+  if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+    const ratio = Math.min(MAX_IMAGE_DIMENSION / width, MAX_IMAGE_DIMENSION / height);
+    width = Math.round(width * ratio);
+    height = Math.round(height * ratio);
+  }
+
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, width, height);
+
+  // Convert to JPEG with 0.8 quality
+  return canvas.toDataURL('image/jpeg', 0.8);
+}
+
+function showImagePreview(base64, name, size) {
+  const area = document.getElementById('imagePreviewArea');
+  const thumb = document.getElementById('previewThumb');
+  const nameEl = document.getElementById('previewName');
+  const sizeEl = document.getElementById('previewSize');
+
+  thumb.src = base64;
+  nameEl.textContent = name;
+  sizeEl.textContent = formatFileSize(size);
+  area.classList.add('active');
+}
+
+function removePendingImage() {
+  pendingImage = null;
+  const area = document.getElementById('imagePreviewArea');
+  area.classList.remove('active');
+  document.getElementById('previewThumb').src = '';
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// ===== Drag and Drop =====
+function setupDragAndDrop() {
+  const wrapper = document.getElementById('inputWrapper');
+  const textarea = document.getElementById('userInput');
+
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    wrapper.addEventListener(eventName, preventDefaults, false);
+    document.body.addEventListener(eventName, preventDefaults, false);
+  });
+
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  wrapper.addEventListener('dragenter', () => {
+    wrapper.classList.add('drag-over');
+  });
+
+  wrapper.addEventListener('dragover', () => {
+    wrapper.classList.add('drag-over');
+  });
+
+  wrapper.addEventListener('dragleave', (e) => {
+    // Only remove if leaving the wrapper entirely
+    if (!wrapper.contains(e.relatedTarget)) {
+      wrapper.classList.remove('drag-over');
+    }
+  });
+
+  wrapper.addEventListener('drop', (e) => {
+    wrapper.classList.remove('drag-over');
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      processImageFile(files[0]);
+    }
+  });
+}
+
+// ===== Lightbox =====
+function openLightbox(src) {
+  const lightbox = document.getElementById('lightbox');
+  const img = document.getElementById('lightboxImg');
+  img.src = src;
+  lightbox.classList.add('active');
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('active');
+}
+
+// ===== Chat Logic =====
+function getChatMessages() {
+  return messages.filter(m => m.role === 'user' || m.role === 'assistant');
+}
+
+function updateCounter() {
+  const count = getChatMessages().length;
+  document.getElementById('msgCounter').textContent = `${count} / ${MAX_MESSAGES}`;
+}
+
+function sendMessage() {
+  if (isStreaming) return;
+
+  const input = document.getElementById('userInput');
+  const text = input.value.trim();
+  const hasImage = pendingImage !== null;
+
+  if (!text && !hasImage) return;
+
+  // Check API keys based on message type
+  if (hasImage) {
+    const sfKey = getSiliconFlowKey();
+    if (!sfKey) {
+      showSettings();
+      showToast('图片分析需要视觉模型API Key，请在设置中填写SiliconFlow API Key');
+      return;
+    }
+  } else {
+    const dsKey = getDeepSeekKey();
+    const sfKey = getSiliconFlowKey();
+    if (!dsKey && !sfKey) {
+      showSettings();
+      showToast('请至少设置一个 API Key');
+      return;
+    }
+  }
+
+  if (getChatMessages().length >= MAX_MESSAGES) {
+    showToast('已达到本会话消息上限（30条），请点击🔄开始新对话');
+    return;
+  }
+
+  // Hide welcome
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.style.display = 'none';
+
+  // Build message content
+  let msgContent;
+  let displayImageBase64 = null;
+
+  if (hasImage) {
+    displayImageBase64 = pendingImage.base64;
+    // Build array content for multimodal (SiliconFlow VL model)
+    const contentParts = [];
+    contentParts.push({
+      type: 'image_url',
+      image_url: { url: pendingImage.base64 }
+    });
+    contentParts.push({
+      type: 'text',
+      text: text || '请分析这张图片中的古文字符号'
+    });
+    msgContent = contentParts;
+  } else {
+    msgContent = text;
+  }
+
+  // Add user message to state
+  messages.push({
+    role: 'user',
+    content: msgContent,
+    _imageBase64: displayImageBase64, // Store for display only
+    _usedVision: hasImage // Mark which API was used for this message
+  });
+
+  // Display user message
+  appendMessage('user', hasImage ? (text || '请分析这张图片中的古文字符号') : text, displayImageBase64);
+
+  // Clear input
+  input.value = '';
+  removePendingImage();
+  autoResizeTextarea();
+  updateCounter();
+
+  // Determine which API to use
+  let apiUrl, apiKey, modelName;
+  if (hasImage) {
+    apiUrl = SILICONFLOW_API_URL;
+    apiKey = getSiliconFlowKey();
+    modelName = 'Qwen/Qwen3-VL-8B-Instruct';
+    document.getElementById('modelBadge').textContent = 'Qwen3-VL';
+  } else {
+    const dsKey = getDeepSeekKey();
+    if (dsKey) {
+      apiUrl = DEEPSEEK_API_URL;
+      apiKey = dsKey;
+      modelName = 'deepseek-chat';
+      document.getElementById('modelBadge').textContent = 'DeepSeek';
+    } else {
+      // Fallback: use SiliconFlow's DeepSeek model when no DeepSeek key
+      apiUrl = SILICONFLOW_API_URL;
+      apiKey = getSiliconFlowKey();
+      modelName = 'deepseek-ai/DeepSeek-V4-Flash';
+      document.getElementById('modelBadge').textContent = 'DeepSeek(SF)';
+    }
+  }
+
+  // Start streaming
+  isStreaming = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  const aiMsgEl = appendMessage('assistant', '');
+  const contentEl = aiMsgEl.querySelector('.msg-content');
+  contentEl.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+
+  // Build API messages - only send role + content (strip internal fields)
+  // For multimodal messages, keep the array format; for text, keep string
+  // When building history for DeepSeek (text-only), strip image content from previous messages
+  const apiMessages = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    ...messages.map(m => {
+      if (!hasImage && m._usedVision && Array.isArray(m.content)) {
+        // When sending to DeepSeek, convert vision messages to text-only
+        const textPart = m.content.find(p => p.type === 'text');
+        return { role: m.role, content: textPart ? textPart.text : '[图片]' };
+      }
+      return { role: m.role, content: m.content };
+    })
+  ];
+
+  let fullContent = '';
+
+  fetch(apiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: modelName,
+      messages: apiMessages,
+      stream: true,
+      max_tokens: 2048
+    })
+  })
+  .then(response => {
+    if (!response.ok) {
+      return response.json().then(err => {
+        throw new Error(err.error?.message || `HTTP ${response.status}`);
+      }).catch(e => {
+        if (e.message && !e.message.startsWith('HTTP')) throw e;
+        throw new Error(`请求失败: HTTP ${response.status}`);
+      });
+    }
+    return streamResponse(response, contentEl, (chunk) => {
+      fullContent += chunk;
+    });
+  })
+  .then(() => {
+    messages.push({ role: 'assistant', content: fullContent });
+    contentEl.innerHTML = renderMarkdown(fullContent);
+    isStreaming = false;
+    document.getElementById('sendBtn').disabled = false;
+    updateModelBadge();
+    updateCounter();
+    scrollToBottom();
+  })
+  .catch(err => {
+    contentEl.innerHTML = `<span style="color:#ef9a9a;">❌ ${escapeHtml(err.message)}</span>`;
+    // Remove the failed user message from state so they can retry
+    messages.pop();
+    isStreaming = false;
+    document.getElementById('sendBtn').disabled = false;
+    updateModelBadge();
+    updateCounter();
+    if (err.message.includes('401') || err.message.includes('api_key') || err.message.includes('API key') || err.message.includes('Authentication')) {
+      showToast('API Key 无效，请检查设置');
+    } else if (err.message.includes('429')) {
+      showToast('请求过于频繁，请稍后重试');
+    } else if (err.message.includes('image_url') || err.message.includes('unknown variant')) {
+      showToast('当前模型不支持图片输入，请检查API配置');
+    }
+  });
+}
+
+async function streamResponse(response, contentEl, onChunk) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let accumulated = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed === 'data: [DONE]') continue;
+      if (!trimmed.startsWith('data: ')) continue;
+
+      try {
+        const json = JSON.parse(trimmed.slice(6));
+        const delta = json.choices?.[0]?.delta?.content;
+        if (delta) {
+          onChunk(delta);
+          accumulated += delta;
+          contentEl.innerHTML = renderMarkdown(accumulated) + '<span class="cursor-blink">▌</span>';
+          scrollToBottom();
+        }
+      } catch (e) {
+        // skip malformed chunks
+      }
+    }
+  }
+
+  // Remove cursor
+  const cursor = contentEl.querySelector('.cursor-blink');
+  if (cursor) cursor.remove();
+}
+
+// ===== DOM Helpers =====
+function appendMessage(role, content, imageBase64) {
+  const chatArea = document.getElementById('chatArea');
+  const msgDiv = document.createElement('div');
+  msgDiv.className = `message ${role}`;
+
+  const avatar = document.createElement('div');
+  avatar.className = 'msg-avatar';
+  avatar.textContent = role === 'user' ? '👤' : '𒀭';
+
+  const contentDiv = document.createElement('div');
+  contentDiv.className = 'msg-content';
+
+  // Add image if present
+  if (imageBase64) {
+    const imgEl = document.createElement('img');
+    imgEl.className = 'msg-image';
+    imgEl.src = imageBase64;
+    imgEl.alt = '上传的图片';
+    imgEl.onclick = function() { openLightbox(imageBase64); };
+    contentDiv.appendChild(imgEl);
+  }
+
+  // Add text content
+  if (content) {
+    const textDiv = document.createElement('div');
+    textDiv.innerHTML = renderMarkdown(content);
+    contentDiv.appendChild(textDiv);
+  }
+
+  msgDiv.appendChild(avatar);
+  msgDiv.appendChild(contentDiv);
+  chatArea.appendChild(msgDiv);
+  scrollToBottom();
+  return msgDiv;
+}
+
+function scrollToBottom() {
+  const chatArea = document.getElementById('chatArea');
+  requestAnimationFrame(() => {
+    chatArea.scrollTop = chatArea.scrollHeight;
+  });
+}
+
+function quickAsk(text) {
+  const ta = document.getElementById('userInput');
+  ta.value = text;
+  ta.focus();
+  sendMessage();
+}
+
+function clearChat() {
+  if (isStreaming) return;
+  messages = [];
+  pendingImage = null;
+  removePendingImage();
+  const chatArea = document.getElementById('chatArea');
+  chatArea.innerHTML = '';
+  // Re-add welcome
+  chatArea.innerHTML = `<div class="welcome" id="welcome">
+    <div class="welcome-icon">𒀭</div>
+    <h2>欢迎来到古文字破译智能体</h2>
+    <p>基于拓扑古文字学的AI助手，帮助您探索甲骨文、楔形文字、埃及圣书体之间的深层关联</p>
+    <div class="welcome-features">
+      <div class="feature-card"><div class="fc-icon">🔍</div><div class="fc-title">古文字识别</div><div class="fc-desc">甲骨文、楔形文字、圣书体三大体系</div></div>
+      <div class="feature-card"><div class="fc-icon">🧬</div><div class="fc-title">拓扑结构分析</div><div class="fc-desc">欧拉特征数、Betti数、环数与对称性</div></div>
+      <div class="feature-card"><div class="fc-icon">🌐</div><div class="fc-title">跨文明比较</div><div class="fc-desc">基于拓扑特征的符号同源性分析</div></div>
+      <div class="feature-card"><div class="fc-icon">📖</div><div class="fc-title">说文解字引证</div><div class="fc-desc">许慎《说文解字》汉字本义与字形演变</div></div>
+    </div>
+  </div>`;
+  updateCounter();
+}
+
+// ===== Input Handling =====
+function handleKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResizeTextarea() {
+  const ta = document.getElementById('userInput');
+  ta.addEventListener('input', () => {
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+  });
+}
+
+// ===== Toast =====
+function showToast(msg, type = 'error') {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = `toast ${type} show`;
+  setTimeout(() => { toast.classList.remove('show'); }, 3000);
+}
+
+// ===== Markdown Renderer (lightweight) =====
+function renderMarkdown(text) {
+  if (!text) return '';
+
+  let html = escapeHtml(text);
+
+  // Code blocks (```...```)
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+    return `<pre><code>${code.trim()}</code></pre>`;
+  });
+
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Bold
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+  // Italic
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+  // Headers
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+  // Unordered lists
+  html = html.replace(/^[•\-\*] (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`);
+
+  // Ordered lists
+  html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+
+  // Blockquote
+  html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+
+  // Links
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+  // Paragraphs: split by double newlines
+  html = html.replace(/\n{2,}/g, '</p><p>');
+
+  // Single newlines to <br> (but not inside pre)
+  html = html.replace(/(?<!<\/pre>)\n(?!<pre>)/g, '<br>');
+
+  // Wrap in paragraph
+  html = `<p>${html}</p>`;
+
+  // Clean empty paragraphs
+  html = html.replace(/<p>\s*<\/p>/g, '');
+
+  return html;
+}
+
+function escapeHtml(text) {
+  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+  return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+// ===== Cursor blink style =====
+const cursorStyle = document.createElement('style');
+cursorStyle.textContent = `.cursor-blink { animation: blink 0.8s step-end infinite; color: #4fc3f7; } @keyframes blink { 50% { opacity: 0; } }`;
+document.head.appendChild(cursorStyle);
+</script>
+
+</body>
+</html>
