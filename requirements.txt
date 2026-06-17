@@ -16,8 +16,8 @@ charset-normalizer==3.4.4
 click==8.3.1
 colorama==0.4.6
 coverage==7.13.4
-coze-coding-dev-sdk==0.5.11
-coze-coding-utils==0.2.4
+coze-coding-dev-sdk==0.5.19
+coze-coding-utils==0.2.8
 coze-workload-identity==0.1.4
 cozeloop==0.1.25
 cryptography==46.0.5
